@@ -1,7 +1,35 @@
 
 var UrlPictures=[];
+var Increase=0;
+
 var UserData={authenticated: false , userId: undefined, online: false };
 
+class Pix extends React.Component{
+
+      constructor(props){
+        super(props);
+       this.state={link: this.props.link};
+       this.onError=this.onError.bind(this);
+       this.handleClick = this.handleClick.bind(this);
+      }
+   
+      handleClick(){
+         if(UserData.userId!=this.props.owner)
+          {console.log(this.state.link+" is not yours");}
+         else
+           {console.log(this.state.link+" has been clicked");}
+       }
+   
+      onError(){
+          console.log("error: could not find picture");
+          this.setState(function(){ return {link: "missing.png"}; });
+         };
+ 
+      render(){
+      //return <img onError={this.onError} onClick={this.handleClick} src={this.state.link}/>;
+     return <button onError={this.onError} onClick={this.handleClick}><img src={this.state.link} /></button>;
+      } 
+}
 
 function Testing(){
  var f=function testing(){
@@ -16,58 +44,37 @@ function Testing(){
 }
 
 
-function DataHandling(urlpix){
+function DataHandling(urlpix,option){
   var pixdata={url: urlpix, userId: UserData.userId};
   var i;
   var list=[];
-  //var altpix="missing.png";
-  var e;
-  var altpix=function()
-             {console.log("error: could not find picture");
-              e="missing.png";
-             };
-
-  function listElement(){
-     return <div className="grid-item"><a href={e}><img onError={altpix} src={e}/></a></div>;
+  
+  
+  function listElement(e,ow){
+     Increase++;
+     return <div className="grid-item"><Pix id={Increase} link={e} owner={ow}/></div>;
   }
   
   if(UserData.online && UserData.userId!="undefined" )
-   {UrlPictures.push(pixdata);
-    
+   {if(option=="add")
+      {UrlPictures.push(pixdata);
+       $.get('/addpix?uid='+pixdata.userId+'&link='+pixdata.url,function(data){console.log('---');}); // no data read out
+      //window.location='/addpix?uid='+pixdata.userId+'&link='+pixdata.url;
+     } 
    }
   else
-   {console.log("user not logged in");
-    alert('Please, log in first ! ');
+   {if(option!="show")        
+      {console.log("user not logged in");
+        alert('Please, log in first ! ');
+      }
    }   
 
   for(i=0;i<UrlPictures.length;++i)
-   {e=UrlPictures[i].url;
-    list.push(listElement(UrlPictures[i].url));
+   {list.push(listElement(UrlPictures[i].url,UrlPictures[i].userId));
    }
 
   ReactDOM.render(<div>{list}</div>,document.getElementById('postedpix'));
 }
-
-class Pix extends React.Component{
-
-      render(){
-       var e,all;
-       var list=[];
-       var m;
-       
-       m=UrlPictures;
-       console.log("this.props.pix "+JSON.stringify(this.props.pix));
-       console.log("UrlPictures "+JSON.stringify(UrlPictures));
-       console.log("m "+JSON.stringify(m));
-
-       console.log("m.length "+m.length);
-       console.log("m[0].url "+m[0].url);
-       
-       all=<div><ul>{list}</ul></div>;
-       return all;  
-      } 
-}
-
 
 class InputField extends React.Component{
 
@@ -82,7 +89,7 @@ class InputField extends React.Component{
   handleClick(){
    console.log("trying to add picture url");
    console.log("value of input field : "+this.state.inputfield);
-   DataHandling(this.state.inputfield);   
+   DataHandling(this.state.inputfield,"add");   
   }
  
   updateInputValue(evt){
@@ -155,6 +162,13 @@ class BrowseUsers extends React.Component{
 
   handleClick(){
    console.log("BrowseUsersButton clicked");
+   $.get("/getUserPix",function(data){
+                 UrlPictures=data;
+                 console.log("data: "+JSON.stringify(data));
+                 DataHandling(undefined,"show");
+   }).fail(function(){
+                 UrlPicutres={url: "error", userId: "error"};
+         });
   }
 
   render(){

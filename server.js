@@ -13,6 +13,14 @@ var engines = require('consolidate');
 
 //----------------------------------------------
 
+//----------------------------------------------------
+// required for database
+
+var mongoose = require('mongoose');
+var url = process.env.MONGODBURL || 'mongodb://localhost:27017/pinclone';  // for accessing database
+var dbase = require('./dbase')(mongoose,app);
+//-------------------------------------------------
+
 //---------------------------------------------
 // required for passport and express session
 
@@ -115,6 +123,17 @@ app.get('/pinclone.jsx',function(req,res){
 
 app.listen(port);
 console.log('server runs on port  ' + port);
+
+//database initialisation and executing
+
+mongoose.connect(url);
+var db = mongoose.connection;
+
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function() {
+  console.log("we are connected to "+url);
+});
+
 
 //=================================================
 

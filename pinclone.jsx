@@ -8,16 +8,22 @@ class Pix extends React.Component{
 
       constructor(props){
         super(props);
-       this.state={link: this.props.link};
+       this.state={link: this.props.link,visible: true};
        this.onError=this.onError.bind(this);
        this.handleClick = this.handleClick.bind(this);
       }
    
       handleClick(){
          if(UserData.userId!=this.props.owner)
-          {console.log(this.state.link+" is not yours");}
+          {console.log(this.state.link+" is not yours");
+           window.location=this.state.link;
+          }
          else
-           {console.log(this.state.link+" has been clicked");}
+           {console.log(this.state.link+" has been clicked");
+             if(confirm('Do you want to delete the picture ?'))
+               {$.get('/delpix?uid='+this.props.owner+'&link='+this.state.link,function(data){console.log('pix deleted');}); // no data read out
+                 this.setState(function(){return {visible: false};});}
+           }
        }
    
       onError(){
@@ -26,8 +32,10 @@ class Pix extends React.Component{
          };
  
       render(){
-      //return <img onError={this.onError} onClick={this.handleClick} src={this.state.link}/>;
-     return <button onError={this.onError} onClick={this.handleClick}><img src={this.state.link} /></button>;
+     if(this.state.visible)
+       {return <div className="grid-item"><button onError={this.onError} onClick={this.handleClick}><img src={this.state.link} /></button></div>;}
+      else
+        {return <p></p>;}   
       } 
 }
 
@@ -37,6 +45,8 @@ function Testing(){
          UserData.authenticated=true;
          UserData.userId='123';
          UserData.online=true;
+         var u=UserData.authenticated;
+         ReactDOM.render(<Menubar loggedIn={u}/>,document.getElementById('menubar'));
        };
  console.log("Testing Mode");
   
@@ -52,7 +62,8 @@ function DataHandling(urlpix,option){
   
   function listElement(e,ow){
      Increase++;
-     return <div className="grid-item"><Pix id={Increase} link={e} owner={ow}/></div>;
+     //return <div className="grid-item"><Pix id={Increase} link={e} owner={ow}/></div>;
+    return <Pix id={Increase} link={e} owner={ow}/>;
   }
   
   if(UserData.online && UserData.userId!="undefined" )
@@ -167,23 +178,49 @@ class BrowseUsers extends React.Component{
                  console.log("data: "+JSON.stringify(data));
                  DataHandling(undefined,"show");
    }).fail(function(){
-                 UrlPicutres={url: "error", userId: "error"};
+                 UrlPictures={url: "error", userId: "error"};
          });
   }
 
   render(){
-   var browsebutton=<button onClick={this.handleClick} className="bq">
+   var browsebutton=<button id="browse" onClick={this.handleClick} className="bq">
                     Browse Users</button>;
    return browsebutton;
   }
 }
 
+class MyPix extends React.Component{
+
+  constructor(props){
+   super(props);
+   this.handleClick = this.handleClick.bind(this);
+  }
+  handleClick(){
+   console.log("MyPix clicked");
+   $.get("/getMyPix?uid="+UserData.userId,function(data){
+                 UrlPictures=data;
+                 console.log("data: "+JSON.stringify(data));
+                 DataHandling(undefined,"show");
+   }).fail(function(){
+                 UrlPictures={url: "error", userId: "error"};
+         });
+  } 
+  render(){
+   if(this.props.loggedIn)
+    {var b=<button id="mypix" onClick={this.handleClick} className="bq">My Pictures</button>;
+     return b;
+    }
+   else
+    {return <p></p>;} 
+  }   
+}
 class Menubar extends React.Component{
 
   render(){
    var twitterlogin=<TwitterLogin loggedIn={this.props.loggedIn}/>; 
    var browseusers=<BrowseUsers/>;
-   var allcomponents=<div>{twitterlogin}{browseusers}</div>;
+   var mypix=<MyPix loggedIn={this.props.loggedIn}/>;
+   var allcomponents=<div>{twitterlogin}{browseusers}{mypix}</div>;
    
    return allcomponents;
   }
@@ -192,7 +229,7 @@ class Menubar extends React.Component{
 //entry point to index.html div id=pinclonemain
 ReactDOM.render(<InputField/>,document.getElementById('pinclonemain'));
 
-ReactDOM.render(<Testing/>,document.getElementById('testing'));
+//ReactDOM.render(<Testing/>,document.getElementById('testing'));
 
 
 //========= retrieving DATA from server 
@@ -213,6 +250,6 @@ $.get("/getlogstat",function(data){
    ReactDOM.render(<Menubar loggedIn={UserData.online}/>,document.getElementById('menubar'));
 });
 
-$('img').error(function(){
-        $(this).attr('src', 'missing.png');
-});
+//$('img').error(function(){
+//        $(this).attr('src', 'missing.png');
+//});
